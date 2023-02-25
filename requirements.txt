@@ -2,4 +2,4 @@ matplotlib
 pandas
 streamlit
 google
---upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
+-t lib google-auth google-auth-httplib2 google-api-python-client --upgrade
