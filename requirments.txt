@@ -1,5 +1,5 @@
-matplotlib.pyplot as plt
-pandas as pd
+matplotlib
+pandas
 io
-streamlit as st
+streamlit
 google
