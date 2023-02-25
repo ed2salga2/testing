@@ -101,5 +101,41 @@ def main():
 if __name__ == "__main__":
     main()
 
+# Parse CSV to extract contingency tables
+def extract_tables(csv):
+    tables = {}
+    for col in csv.columns:
+        if csv[col].iloc[0] == 'Class: Question':
+            question = csv[col].iloc[1]
+            tables[question] = csv.iloc[:, csv.columns.get_loc(col):].dropna(how='all')
+            tables[question].columns = tables[question].iloc[0]
+            tables[question] = tables[question].iloc[1:]
+    return tables
+
+# Generate plot based on user selections and customizations
+def generate_plot(table, x_col, y_cols, plot_type, colors, title, subtitle, direction, x_label, y_label, x_tick_labels, y_tick_labels, grid, legend, style):
+    fig, ax = plt.subplots()
+    if plot_type == "bar":
+        table.plot(x=x_col, y=y_cols, kind=plot_type, color=colors, ax=ax)
+    else:
+        table.plot(x=x_col, y=y_cols, kind=plot_type, color=colors, ax=ax, legend=False)
+    ax.set_title(title)
+    ax.set_xlabel(x_label)
+    ax.set_ylabel(y_label)
+    ax.set_xticklabels(x_tick_labels)
+    ax.set_yticklabels(y_tick_labels)
+    if subtitle:
+        ax.text(0.5, 1.08, subtitle, horizontalalignment='center', transform=ax.transAxes, fontsize=12)
+    if grid:
+        ax.grid(True)
+    if legend:
+        ax.legend(legend)
+    if style:
+        plt.style.use(style)
+    if direction == "horizontal":
+        ax.invert_yaxis()
+    return fig
+
+
 
 
