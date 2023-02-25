@@ -141,4 +141,4 @@ def save_plot(fig):
         except:
             st.write("Unable to save file to Google Drive. Check your credentials or try again later.")
 
-
+st run cidt.py
