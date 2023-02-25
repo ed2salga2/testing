@@ -96,12 +96,8 @@ def main():
                         st.sidebar.success("Plot saved successfully to Google Drive with ID: {}".format(file.get("id")))
                     except HttpError as error:
                         st.sidebar.error("Unable to save plot to Google Drive: {}".format(error))
-                        
-# Run main program
-if __name__ == "__main__":
-    main()
 
-# Parse CSV to extract contingency tables
+    # Parse CSV to extract contingency tables
 def extract_tables(csv):
     tables = {}
     for col in csv.columns:
@@ -135,6 +131,11 @@ def generate_plot(table, x_col, y_cols, plot_type, colors, title, subtitle, dire
     if direction == "horizontal":
         ax.invert_yaxis()
     return fig
+                      
+# Run main program
+if __name__ == "__main__":
+    main()
+
 
 
 
