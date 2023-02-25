@@ -1,9 +1,3 @@
-pip install pandas
-pip install matplotlib
-pip install io
-pip install streamlit
-pip install --upgrade google-api-python-client google-auth-httplib2 google-auth-oauthlib
-
 import pandas as pd
 import matplotlib.pyplot as plt
 import io
