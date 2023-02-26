@@ -3,8 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from functools import reduce
 
-import pandas as pd
-
 def extract_tables(csv):
     tables = {}
     table_idx = 0
@@ -19,17 +17,16 @@ def extract_tables(csv):
             while pd.isna(csv.loc[table_idx + 1, csv.columns[col_start_idx]]):
                 col_start_idx += 1
             col_end_idx = col_start_idx
-            while col_end_idx < len(csv.columns) and not pd.isna(csv.loc[table_idx + 1, csv.columns[col_end_idx]]):
+            while col_end_idx < csv.shape[1] and not pd.isna(csv.loc[table_idx + 1, csv.columns[col_end_idx]]):
                 col_end_idx += 1
             num_cols = col_end_idx - col_start_idx
+
             num_rows = 0
-            for i in range(data_start_idx, len(csv.index)):
-                if pd.isna(csv.loc[i, csv.columns[col_start_idx]]):
-                    break
+            while data_start_idx + num_rows < len(csv.index) and not pd.isna(csv.loc[data_start_idx + num_rows, csv.columns[0]]):
                 num_rows += 1
 
             # Extract table data
-            table_data = csv.loc[data_start_idx:data_start_idx + num_rows - 1, col_start_idx:col_end_idx - 1]
+            table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, col_start_idx:col_end_idx]
             table_data = table_data.fillna('')
             table_data = table_data.set_index(table_data.columns[0])
             table_data.index.name = None
@@ -55,11 +52,14 @@ def extract_tables(csv):
 
     return tables
 
-csv = pd.read_csv('test.csv')
-tables = extract_tables(csv)
-table_name = 'P25. A que sabe?'
-print(tables[table_name])
-print(tables[table_name + '_headers'])
+
+
+
+
+
+
+
+
 
 
 
