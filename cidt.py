@@ -27,22 +27,23 @@ def extract_tables(csv):
             # Extract table data
             table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, :num_cols]
             table_data = table_data.fillna('')
-            table_data = table_data.set_index(table_data.columns[0])
-            table_data.index.name = None
-            table_data.columns.name = None
-            table_data = table_data.apply(pd.to_numeric, errors='coerce')
-            tables[table_name] = table_data
+            if table_data.shape[0] > 0 and table_data.shape[1] > 0:
+                table_data = table_data.set_index(table_data.columns[0])
+                table_data.index.name = None
+                table_data.columns.name = None
+                table_data = table_data.apply(pd.to_numeric, errors='coerce')
+                tables[table_name] = table_data
 
-            # Extract parent/child header information
-            headers = {}
-            parent_headers = list(table_data.columns)
-            child_headers = list(reduce(lambda x, y: x + y, pd.crosstab(index=table_data.index, columns=[table_data[c] for c in parent_headers]).columns))
-            for parent in parent_headers:
-                child_start_idx = parent_headers.index(parent) * len(table_data.index)
-                child_end_idx = child_start_idx + len(table_data.index)
-                headers[parent] = child_headers[child_start_idx:child_end_idx]
+                # Extract parent/child header information
+                headers = {}
+                parent_headers = list(table_data.columns)
+                child_headers = list(reduce(lambda x, y: x + y, pd.crosstab(index=table_data.index, columns=[table_data[c] for c in parent_headers]).columns))
+                for parent in parent_headers:
+                    child_start_idx = parent_headers.index(parent) * len(table_data.index)
+                    child_end_idx = child_start_idx + len(table_data.index)
+                    headers[parent] = child_headers[child_start_idx:child_end_idx]
 
-            tables[table_name + '_headers'] = headers
+                tables[table_name + '_headers'] = headers
 
             # Move to next table
             table_idx = data_start_idx + num_rows
@@ -50,6 +51,7 @@ def extract_tables(csv):
             table_idx += 1
             
     return tables
+
 
 
 
