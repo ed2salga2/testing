@@ -5,48 +5,49 @@ from functools import reduce
  
 
 def extract_tables(csv):
-    # Split CSV into individual tables
-    split_indices = []
-    for i, row in csv.iterrows():
-        if not pd.isna(row[0]):
-            split_indices.append(i)
-    split_indices.append(len(csv))
-    table_dfs = [csv[split_indices[i]:split_indices[i+1]] for i in range(len(split_indices)-1)]
+    # Split the CSV by blank rows
+    tables_csv = [g for _, g in csv.groupby((csv.isnull() | (csv == '')).all(1))]
 
-    # Process each table separately
     tables = {}
-    for table_df in table_dfs:
-        # Look for table name in first column
-        if not pd.isna(table_df.iloc[0, 0]):
-            table_name = table_df.iloc[0, 0]
+    for table_csv in tables_csv:
+        table_idx = 0
+        while table_idx < len(table_csv.index):
+            # Look for table name in first column
+            if not pd.isna(table_csv.loc[table_idx, table_csv.columns[0]]):
+                table_name = table_csv.loc[table_idx, table_csv.columns[0]]
 
-            # Find table dimensions
-            table_height = 1
-            while (table_height < len(table_df.index) and
-                   all(pd.isna(table_df.iloc[table_height, 0:3]))):
-                table_height += 1
-            data_start_idx = table_height
+                # Find table dimensions
+                table_height = 1
+                while (table_idx + table_height) < len(table_csv.index) and all(pd.isna(table_csv.loc[table_idx + table_height, table_csv.columns[0]:3])):
+                    table_height += 1
+                data_start_idx = table_idx + table_height
 
-            # Extract table data
-            table_data = table_df.iloc[data_start_idx:, 3:]
-            table_data = table_data.fillna('')
-            table_data = table_data.set_index(table_data.columns[0])
-            table_data.index.name = None
-            table_data.columns.name = None
-            table_data = table_data.apply(pd.to_numeric, errors='coerce')
-            tables[table_name] = table_data
+                # Extract table data
+                table_data = table_csv.iloc[data_start_idx:, 3:]
+                table_data = table_data.fillna('')
+                table_data = table_data.set_index(table_data.columns[0])
+                table_data.index.name = None
+                table_data.columns.name = None
+                table_data = table_data.apply(pd.to_numeric, errors='coerce')
+                tables[table_name] = table_data
 
-            # Extract parent/child header information
-            headers = {}
-            num_levels = table_data.columns.nlevels
-            for level in range(num_levels):
-                header_level = [h for h in table_data.columns.levels[level] if h]
-                if header_level:
-                    headers[header_level[0]] = list(table_data.columns.get_level_values(level + 1))
+                # Extract parent/child header information
+                headers = {}
+                num_levels = table_data.columns.nlevels
+                for level in range(num_levels):
+                    header_level = [h for h in table_data.columns.levels[level] if h]
+                    if header_level:
+                        headers[header_level[0]] = list(table_data.columns.get_level_values(level + 1))
 
-            tables[table_name + '_headers'] = headers
+                tables[table_name + '_headers'] = headers
+
+                # Move to next table
+                table_idx += table_height
+            else:
+                table_idx += 1
 
     return tables
+
 
 
 def generate_plot(table_data, title):
