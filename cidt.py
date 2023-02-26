@@ -11,7 +11,7 @@ def extract_tables(csv):
         if not pd.isna(csv.iloc[table_idx, 0]):
             table_name = csv.iloc[table_idx, 0]
             data_start_idx = table_idx + 2
-            
+
             # Determine table dimensions
             num_cols = 0
             while num_cols < csv.shape[1] and not pd.isna(csv.iloc[table_idx + 1, num_cols]) and num_cols < len(csv.columns):
@@ -19,14 +19,15 @@ def extract_tables(csv):
             num_rows = 0
             while data_start_idx + num_rows < len(csv.index) and not pd.isna(csv.iloc[data_start_idx + num_rows, 0]):
                 num_rows += 1
-            
+
             # Extract table data
             table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, :num_cols]
-            if table_data.empty:
-                table_idx = data_start_idx + num_rows
-                continue
             table_data = table_data.fillna('')
             table_data = table_data.set_index(table_data.columns[0])
+            table_data.index.name = None
+            table_data.columns.name = None
+            table_data = table_data.apply(pd.to_numeric, errors='coerce')
+            tables[table_name] = table_data
 
             # Extract parent/child header information
             headers = {}
@@ -37,15 +38,15 @@ def extract_tables(csv):
                 child_end_idx = child_start_idx + len(table_data.index)
                 headers[parent] = child_headers[child_start_idx:child_end_idx]
 
-            tables[table_name] = table_data
             tables[table_name + '_headers'] = headers
 
             # Move to next table
             table_idx = data_start_idx + num_rows
         else:
             table_idx += 1
-            
+
     return tables
+
 
 
 
