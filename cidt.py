@@ -7,7 +7,7 @@ def extract_tables(csv):
     table_names = set(csv.iloc[:, 0].values)
     for table_name in table_names:
         if not pd.isna(table_name):
-            table_data = pd.crosstab(index=csv.iloc[:, 0], columns=csv.iloc[:, 1:], dropna=False)
+            table_data = pd.crosstab(index=csv.iloc[:, 0], columns=csv.iloc[:, 1:], dropna=False).apply(pd.to_numeric, errors='coerce')
             table_data = table_data.loc[table_name].reset_index().melt(id_vars=[table_name])
             table_data.columns = ['Category', 'Value']
             tables[table_name] = table_data
