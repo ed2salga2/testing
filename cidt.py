@@ -103,23 +103,33 @@ def extract_tables(csv):
     for row_idx in range(csv.shape[0]):
         if not pd.isna(csv.iloc[row_idx, 0]):
             table_name = csv.iloc[row_idx, 0]
-            tables[table_name] = pd.DataFrame(columns=csv.iloc[row_idx+1:, 0])
-            tables[table_name].index.name = csv.columns[0]
-
+            n_cols = 1
             for col_idx in range(1, csv.shape[1]):
-                if not pd.isna(csv.iloc[row_idx+1, col_idx]):
-                    cat_name = csv.iloc[row_idx+1, col_idx]
-                    level = len([c for c in cat_name if c == ','])
-                    cat_data = pd.Series(csv.iloc[row_idx+2:, col_idx].values, index=tables[table_name].columns, dtype=float)
-                    cat_data.name = cat_name
-                    if level == 0:
-                        tables[table_name] = tables[table_name].append(cat_data)
-                    else:
-                        parent_cat_name = cat_name.rsplit(',', 1)[0]
-                        parent_cat_data = tables[table_name].loc[parent_cat_name]
-                        tables[table_name].loc[cat_name] = cat_data - parent_cat_data
+                if pd.isna(csv.iloc[row_idx, col_idx]):
+                    n_cols = col_idx
+                    break
+            n_rows = 0
+            for row_idx2 in range(row_idx+2, csv.shape[0]):
+                if pd.isna(csv.iloc[row_idx2, 0]):
+                    n_rows = row_idx2 - row_idx - 2
+                    break
+            table_data = csv.iloc[row_idx+2:row_idx+2+n_rows, :n_cols].fillna('')
+            tables[table_name] = pd.DataFrame(table_data.values, columns=table_data.iloc[0], index=None).drop([0])
             tables[table_name].fillna(0, inplace=True)
+
+            for col_idx in range(n_cols):
+                if col_idx > 0:
+                    level = 1
+                    parent_cat = ''
+                    for row_idx2 in range(row_idx+1, csv.shape[0]):
+                        if pd.isna(csv.iloc[row_idx2, col_idx]):
+                            break
+                        cat_name = csv.iloc[row_idx2, col_idx]
+                        tables[table_name][cat_name] = tables[table_name][parent_cat] - tables[table_name][cat_name]
+                        parent_cat = cat_name
+                        level += 1
     return tables
+
 
 
 # Generate plot based on user selections and customizations
