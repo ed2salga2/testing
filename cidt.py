@@ -13,20 +13,18 @@ def extract_tables(csv):
             data_start_idx = table_idx + 2
 
             # Determine table dimensions
-            col_start_idx = 1
-            while pd.isna(csv.loc[table_idx + 1, csv.columns[col_start_idx]]):
-                col_start_idx += 1
-            col_end_idx = col_start_idx
-            while col_end_idx < csv.shape[1] and not pd.isna(csv.loc[table_idx + 1, csv.columns[col_end_idx]]):
-                col_end_idx += 1
-            num_cols = col_end_idx - col_start_idx
-
+            num_cols = csv.loc[table_idx + 1].count()
             num_rows = 0
-            while data_start_idx + num_rows < len(csv.index) and not pd.isna(csv.loc[data_start_idx + num_rows, csv.columns[0]]):
+            while pd.notna(csv.loc[data_start_idx + num_rows, csv.columns[0]]):
                 num_rows += 1
 
             # Extract table data
-            table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, col_start_idx:col_end_idx]
+            col_start_idx = 0
+            while pd.isna(csv.loc[table_idx + 1, csv.columns[col_start_idx]]):
+                col_start_idx += 1
+            col_end_idx = col_start_idx + num_cols
+
+            table_data = csv.loc[data_start_idx:data_start_idx + num_rows - 1, col_start_idx:col_end_idx - 1]
             table_data = table_data.fillna('')
             table_data = table_data.set_index(table_data.columns[0])
             table_data.index.name = None
@@ -51,6 +49,7 @@ def extract_tables(csv):
             table_idx += 1
 
     return tables
+
 
 
 
