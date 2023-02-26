@@ -3,46 +3,42 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from functools import reduce
  
+
 def extract_tables(csv):
     tables = {}
     table_idx = 0
-    
     while table_idx < len(csv.index):
         # Look for table name in first column
         if not pd.isna(csv.loc[table_idx, csv.columns[0]]):
             table_name = csv.loc[table_idx, csv.columns[0]]
-            data_start_idx = table_idx + 2
-            
-            # Determine table dimensions
-            num_cols = 0
-            for i in range(3):
-                if pd.isna(csv.loc[table_idx, csv.columns[i]]):
-                    break
-                num_cols += 1
-                
-            num_rows = 1
-            while pd.isna(csv.loc[table_idx + num_rows, csv.columns[0]]):
-                num_rows += 1
-            
+
+            # Find table dimensions
+            table_height = 1
+            while (table_idx + table_height) < len(csv.index) and all(pd.isna(csv.loc[table_idx + table_height, csv.columns[0]:3])):
+                table_height += 1
+            data_start_idx = table_idx + table_height
+
             # Extract table data
-            table_data = csv.iloc[data_start_idx:data_start_idx + num_rows - 1, :num_cols]
+            table_data = csv.iloc[data_start_idx:, 3:]
             table_data = table_data.fillna('')
             table_data = table_data.set_index(table_data.columns[0])
             table_data.index.name = None
             table_data.columns.name = None
             table_data = table_data.apply(pd.to_numeric, errors='coerce')
             tables[table_name] = table_data
-            
+
             # Extract parent/child header information
             headers = {}
-            for i in range(1, num_cols):
-                header_level = [h for h in table_data.columns.levels[i] if h]
-                headers[header_level[0]] = header_level[1:]
-            
+            num_levels = table_data.columns.nlevels
+            for level in range(num_levels):
+                header_level = [h for h in table_data.columns.levels[level] if h]
+                if header_level:
+                    headers[header_level[0]] = list(table_data.columns.get_level_values(level + 1))
+
             tables[table_name + '_headers'] = headers
-            
+
             # Move to next table
-            table_idx += num_rows
+            table_idx += table_height
         else:
             table_idx += 1
 
