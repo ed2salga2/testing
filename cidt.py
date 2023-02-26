@@ -10,7 +10,7 @@ def extract_tables(csv):
     while table_idx < len(csv.index):
         # Look for table name in first column
         if not pd.isna(csv.iloc[table_idx, 0]):
-            table_name = csv.iloc[table_idx, 0]
+            table_name = str(csv.iloc[table_idx, 0])
             data_start_idx = table_idx + 2
             
             # Determine table dimensions
@@ -24,7 +24,12 @@ def extract_tables(csv):
             # Extract table data
             table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, :num_cols]
             table_data = table_data.fillna('')
-            table_data = table_data.set_index([table_name] + list(range(1, num_cols)))
+            
+            if num_cols > 1:
+                table_data = table_data.set_index([table_name] + list(range(1, num_cols)))
+            else:
+                table_data = table_data.set_index(table_name)
+                
             table_data.index.name = None
             table_data.columns.name = None
             table_data = table_data.apply(pd.to_numeric, errors='coerce')
@@ -47,6 +52,7 @@ def extract_tables(csv):
             table_idx += 1
             
     return tables
+
 
 
 
