@@ -31,7 +31,10 @@ def extract_tables(csv):
             headers = {}
             num_levels = table_data.columns.nlevels
             for level in range(num_levels):
-                header_level = [h for h in table_data.columns.levels[level] if h]
+                if table_data.columns.nlevels > 1:
+                    header_level = [h for h in table_data.columns.levels[level] if h]
+                else:
+                    header_level = [table_data.columns[0]]
                 if header_level:
                     headers[header_level[0]] = list(table_data.columns.get_level_values(level + 1))
 
@@ -43,6 +46,7 @@ def extract_tables(csv):
             table_idx += 1
 
     return tables
+
 
 
 def generate_plot(table_data, title):
