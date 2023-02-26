@@ -111,7 +111,7 @@ def extract_tables(csv):
                 if not pd.isna(csv.iloc[row_idx+1, col_idx]):
                     cat_name = csv.iloc[row_idx+1, col_idx]
                     level = len([c for c in cat_name if c == ','])
-                    cat_data = pd.Series(csv.iloc[row_idx+2:, col_idx].values, index=tables[table_name].columns, dtype=float)
+                    cat_data = pd.Series(csv.loc[row_idx+2:, csv.columns[col_idx]].values, index=tables[table_name].columns, dtype=float)
                     cat_data.name = cat_name
                     if level == 0:
                         tables[table_name] = tables[table_name].append(cat_data)
