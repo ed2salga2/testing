@@ -100,90 +100,79 @@ def main():
     # Parse CSV to extract contingency tables
 import pandas as pd
 
+import pandas as pd
+
 def extract_tables(csv):
     tables = {}
-    row_idx = 0
-    while row_idx < len(csv.index):
+    table_idx = 0
+    while table_idx < len(csv.index):
         # Look for table name in first column
-        if not pd.isna(csv.iloc[row_idx, 0]):
-            table_name = csv.iloc[row_idx, 0]
-            col_idx = 1
+        if not pd.isna(csv.iloc[table_idx, 0]):
+            table_name = csv.iloc[table_idx, 0]
+            data_start_idx = table_idx + 2
             
             # Determine table dimensions
-            while col_idx < len(csv.columns) and row_idx+1 < len(csv.index) and pd.isna(csv.iloc[row_idx+1, col_idx]):
-                col_idx += 1
+            num_cols = 0
+            while num_cols < len(csv.columns) and not pd.isna(csv.iloc[table_idx + 1, num_cols]):
+                num_cols += 1
             num_rows = 0
-            while not pd.isna(csv.iloc[row_idx+2+num_rows, 0]):
+            while data_start_idx + num_rows < len(csv.index) and not pd.isna(csv.iloc[data_start_idx + num_rows, 0]):
                 num_rows += 1
-            num_cols = col_idx - 1
             
             # Extract table data
-            table_data = csv.iloc[row_idx+2:row_idx+2+num_rows, :num_cols+1]
-            table_data = table_data.dropna(how='all')
+            table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, :num_cols]
             table_data = table_data.set_index(table_data.columns[0])
             table_data.index.name = None
             table_data.columns.name = None
             table_data = table_data.apply(pd.to_numeric, errors='ignore')
             tables[table_name] = table_data
-            
+
             # Extract parent/child header information
             headers = {}
-            for col_idx in range(1, num_cols+1):
-                header_level = 0
-                header_name = ""
-                header_list = []
-                for i in range(len(table_data.columns)):
-                    col_name = table_data.columns[i]
-                    if isinstance(col_name, str):
-                        while len(header_list) > header_level:
-                            header_list.pop()
-                        header_name = col_name.strip()
-                        headers[header_name] = []
-                        header_list.append(header_name)
-                        header_level = len(header_list)
-                    else:
-                        child_name = col_name[0].strip()
-                        headers[header_name].append(child_name)
-                        header_list.append(child_name)
-            
+            parent_headers = list(table_data.columns)
+            child_headers = list(reduce(lambda x, y: x + y, pd.crosstab(index=table_data.index, columns=[table_data[c] for c in parent_headers]).columns))
+            for parent in parent_headers:
+                child_start_idx = parent_headers.index(parent) * len(table_data.index)
+                child_end_idx = child_start_idx + len(table_data.index)
+                headers[parent] = child_headers[child_start_idx:child_end_idx]
+
             tables[table_name + '_headers'] = headers
-            
+
             # Move to next table
-            row_idx += 2 + num_rows
+            table_idx = data_start_idx + num_rows
         else:
-            row_idx += 1
+            table_idx += 1
             
     return tables
 
 
-
 # Generate plot based on user selections and customizations
-def generate_plot(csv_file, table_name, category_path):
-    csv = pd.read_csv(csv_file, header=None)
+def generate_plot(table, x_col, y_col):
+    fig, ax = plt.subplots()
+    table.plot(kind='bar', x=x_col, y=y_col, ax=ax)
+    ax.set_xlabel(x_col)
+    ax.set_ylabel(y_col)
+    st.pyplot(fig)
+
+# Load CSV file
+csv_file = st.file_uploader("Upload CSV file", type=['csv'])
+if csv_file is not None:
+    csv = pd.read_csv(csv_file)
     tables = extract_tables(csv)
-    table = tables[table_name]
-    category_names = [category.strip() for category in category_path.split('>')]
 
-    # filter the table based on the selected category path
-    filtered_table = table.copy()
-    for i in range(len(category_names)):
-        category_name = category_names[i]
-        if category_name:
-            level = i + 1
-            if level == 1:
-                filtered_table = filtered_table.loc[[name.startswith(category_name + ',') for name in filtered_table.index]]
-            else:
-                parent_category_name = category_names[i-1]
-                parent_category_data = filtered_table.loc[parent_category_name]
-                filtered_table = filtered_table.loc[[name == category_name or name.startswith(category_name + ',') for name in filtered_table.index]]
-                filtered_table = filtered_table.sub(parent_category_data, axis=1)
+    # Prompt user to select table
+    table_name = st.selectbox("Select table", list(tables.keys()))
 
-    # plot the filtered table
-    fig, ax = plt.subplots(figsize=(10, 6))
-    ax.axis('off')
-    ax.axis('tight')
-    ax.table(cellText=filtered_table.values, colLabels=filtered_table.columns, rowLabels=filtered_table.index, loc='center')
-    plt.show()
+    # Prompt user to select parent and child headers
+    parent_header = st.selectbox("Select parent header", list(tables[table_name + '_headers'].keys()))
+    child_header = st.selectbox("Select child header", tables[table_name + '_headers'][parent_header])
+
+    # Filter data
+    data = tables[table_name].loc[:, [parent_header, child_header]]
+    data = data.groupby([parent_header, child_header]).size().reset_index(name='count')
+
+    # Generate plot
+    generate_plot(data, parent_header, 'count')
 
                       
 # Run main program
