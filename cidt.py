@@ -134,7 +134,7 @@ def plot_table_data(tables, table_name):
         for key, value in filter_options.items():
             if value != 'All':
                 filter_columns[key] = value
-        filtered_table = tables[table_name].copy().reset_index(drop=True)
+        filtered_table = tables.get(table_name, pd.DataFrame()).copy().reset_index(drop=True)
         for column, value in filter_columns.items():
             filtered_table = filtered_table[filtered_table[column] == value]
 
@@ -145,6 +145,7 @@ def plot_table_data(tables, table_name):
         else:
             # Display a message if the filtered table is empty
             st.write('No data')
+
 
 
 # Define the main function
