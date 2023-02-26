@@ -98,6 +98,8 @@ def main():
                         st.sidebar.error("Unable to save plot to Google Drive: {}".format(error))
 
     # Parse CSV to extract contingency tables
+import pandas as pd
+
 def extract_tables(csv):
     tables = {}
     row_idx = 0
@@ -116,9 +118,7 @@ def extract_tables(csv):
             num_cols = col_idx - 1
             
             # Extract table data
-            row_labels = csv.index[row_idx+2:row_idx+1+num_rows]
-            col_labels = csv.columns[:num_cols+1]
-            cat_data = pd.DataFrame(csv.loc[row_labels, col_labels])
+            cat_data = pd.DataFrame(csv.loc[row_idx+2:row_idx+1+num_rows, :num_cols+1].values)
             cat_data.columns = cat_data.iloc[0]
             cat_data = cat_data.iloc[1:]
             cat_data = cat_data.set_index(cat_data.columns[0])
@@ -155,10 +155,6 @@ def extract_tables(csv):
             row_idx += 1
             
     return tables
-
-
-
-
 
 
 # Generate plot based on user selections and customizations
