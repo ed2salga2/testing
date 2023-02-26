@@ -32,29 +32,16 @@ def extract_tables(csv):
             table_data = table_data.fillna('')
             table_data = table_data.set_index(table_data.columns[0])
             table_data.index.name = None
-            table_data.columns.name = None
+            table_data.columns.names = [f"Level {i+1}" for i in range(table_data.columns.nlevels)]
             table_data = table_data.apply(pd.to_numeric, errors='coerce')
-            tables[table_name] = {'data': table_data}
+            tables[table_name] = table_data
 
             # Extract parent/child header information
-            headers = {}
-            parent_headers = list(table_data.columns)
-            child_headers = [item for sublist in pd.crosstab(index=table_data.index, columns=[table_data[c] for c in parent_headers]).columns for item in sublist]
-            for parent, child in zip(parent_headers, child_headers):
-                if parent not in headers:
-                    headers[parent] = []
-                headers[parent].append(child)
-
-            tables[table_name]['headers'] = headers
-
-            # Extract hierarchy levels
-            header_rows = table_data.columns.nlevels
             hierarchy_levels = []
-            for i in range(header_rows):
-                level = []
-                for j in range(len(table_data.columns.levels[i])):
-                    level.append(table_data.columns.levels[i][j])
-                hierarchy_levels.append(level)
+            for level in range(table_data.columns.nlevels):
+                header_level = [h for h in table_data.columns.levels[level] if h]
+                if header_level:
+                    hierarchy_levels.append(header_level)
             tables[table_name]['hierarchy_levels'] = hierarchy_levels
 
             # Move to next table
@@ -63,6 +50,7 @@ def extract_tables(csv):
             table_idx += 1
 
     return tables
+
 
 
 
