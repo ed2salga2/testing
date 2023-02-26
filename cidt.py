@@ -146,8 +146,6 @@ def plot_table_data(tables, table_name):
             # Display a message if the filtered table is empty
             st.write('No data')
 
-
-
 # Define the main function
 def main():
     # Set the app title and page icon
@@ -165,66 +163,22 @@ def main():
         # Extract the tables from the CSV file
         tables = extract_tables(csv_file.getvalue())
 
+        # If there are no tables in the CSV file
+        if not tables:
+            st.write('No tables found in the CSV file')
+            return
+
         # Create a dropdown menu to select the table to plot
         table_name = st.selectbox('Select a table to plot', options=list(tables.keys()))
 
-        # If the selected table is not empty
-        if not tables[table_name].empty:
-            # Create a list of the column headers in the table
-            column_headers = ['All'] + list(tables[table_name].columns)
-
-            # Create a dictionary to store the filter options
-            filter_options = {}
-
-            # Loop through the header hierarchy and add each level to the filter options
-            for level in get_table_headers({table_name: tables[table_name]})[table_name]:
-                header = ' '.join(level)
-                filter_options[header] = st.selectbox(header, options=column_headers)
-
-            # Create a dropdown menu to select the plot type
-            plot_type = st.selectbox('Select a plot type', options=['Bar', 'Line', 'Scatter', 'Boxplot'])
-
-            # Create a list of the column headers in the table
-            headers = []
-            for level in get_table_headers({table_name: tables[table_name]})[table_name]:
-                header = ' '.join(level)
-                headers.append(header)
-
-            # Create a dictionary to store the plot options
-            plot_options = {
-                'Headers': st.multiselect('Select columns to plot', options=headers),
-                'Title': st.text_input('Enter the plot title', value=table_name),
-                'X Axis Label': st.text_input('Enter the X axis label', value=headers[0]),
-                'Y Axis Label': st.text_input('Enter the Y axis label', value='Count'),
-                'Color': st.color_picker('Select a plot color', value='#1f77b4')
-
-            }
-
-            # Create a button to plot the selected options
-            plot_button = st.button('Plot')
-
-            # If the plot button is clicked
-            if plot_button:
-                # Filter the table based on the selected filter options
-                filter_columns = {}
-                for key, value in filter_options.items():
-                    if value != 'All':
-                        filter_columns[key] = value
-                filtered_table = tables[table_name].copy().reset_index(drop=True)
-                for column, value in filter_columns.items():
-                    filtered_table = filtered_table[filtered_table[column] == value]
-
-                # If the filtered table is not empty
-                if not filtered_table.empty:
-                    # Plot the table based on the selected plot type and plot options
-                    plot_table(filtered_table, plot_type, filter_columns, plot_options)
-                else:
-                    # Display a message if the filtered table is empty
-                    st.write('No data')
+        # Call the plot_table_data function to plot the table
+        plot_table_data(tables, table_name)
 
     # Set the app footer
-    st.text('Created by CAN with love for coding')
+    st.text('Created by Zompopa Solutions with love for coding')
 
-# Call the main function
 if __name__ == '__main__':
     main()
+
+
+
