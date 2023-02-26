@@ -4,17 +4,41 @@ import matplotlib.pyplot as plt
 
 def extract_tables(csv):
     tables = {}
-    table_names = set(csv.iloc[:, 0].values)
-    for table_name in table_names:
-        if not pd.isna(table_name):
-            table_data = pd.crosstab(index=csv.iloc[:, 0], columns=csv.iloc[:, 1:], dropna=False).apply(pd.to_numeric, errors='coerce')
-            table_data = table_data.loc[table_name].reset_index().melt(id_vars=[table_name])
-            table_data.columns = ['Category', 'Value']
+    table_idx = 0
+    while table_idx < len(csv.index):
+        # Look for table name in first column
+        if not pd.isna(csv.iloc[table_idx, 0]):
+            table_name = csv.iloc[table_idx, 0]
+            data_start_idx = table_idx + 2
+            
+            # Determine table dimensions
+            num_cols = 0
+            while num_cols < len(csv.columns) and not pd.isna(csv.iloc[table_idx + 1, num_cols]):
+                num_cols += 1
+            num_rows = 0
+            while data_start_idx + num_rows < len(csv.index) and not pd.isna(csv.iloc[data_start_idx + num_rows, 0]):
+                num_rows += 1
+            
+            # Extract table data
+            table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, :num_cols]
+            table_data = table_data.set_index(table_data.columns[0])
+            table_data.index.name = None
+            table_data.columns.name = None
+            table_data = table_data.apply(pd.to_numeric, errors='coerce')
+
+            # Extract hierarchical headers
+            parent_headers = list(table_data.columns)
+            child_headers = [c for c in reduce(lambda x, y: x + y, [pd.crosstab(index=table_data.index, columns=[table_data[c1], table_data[c2]], dropna=False).columns for c1, c2 in zip(parent_headers[:-1], parent_headers[1:])])]
+            headers = {parent_headers[i]: child_headers[i * len(table_data.index):(i + 1) * len(table_data.index)] for i in range(len(parent_headers) - 1)}
+
             tables[table_name] = table_data
-            parent_headers = list(table_data['Category'].unique())
-            child_headers = list(table_data['Value'].unique())
-            headers = {parent: [child for child in child_headers if child.startswith(parent)] for parent in parent_headers}
             tables[table_name + '_headers'] = headers
+
+            # Move to next table
+            table_idx = data_start_idx + num_rows
+        else:
+            table_idx += 1
+            
     return tables
 
 def generate_plot(table_data, title):
