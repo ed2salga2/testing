@@ -9,89 +9,50 @@ import pandas as pd
 import re
 
 def extract_tables(csv):
-    """
-    Parse CSV string and return a dictionary of tables.
-
-    Each table is a pandas DataFrame and is keyed by its table name.
-    """
-
-    # Split CSV string into a list of lines
-    lines = csv.split('\n')
-
-    # Initialize variables
+    lines = csv_file.getvalue().split('\n')
     tables = {}
-    current_table_name = None
-    current_table_data = []
-    current_table_hierarchy = None
-    current_row_index = 0
+    while len(lines) > 0:
+        if lines[0] == '':
+            lines.pop(0)
+            continue
+        table_name = None
+        for i, line in enumerate(lines):
+            if line.strip() != '':
+                table_name = line
+                break
+        if not table_name:
+            break
+        lines = lines[i+1:]
+        last_row_index = None
+        for i, line in enumerate(lines):
+            if line.strip() == '':
+                last_row_index = i
+                break
+        if not last_row_index:
+            last_row_index = len(lines)
+        total_row = last_row_index
+        headers = []
+        for i, line in enumerate(lines[:last_row_index]):
+            if line.strip() != '':
+                headers.append(line)
+        num_cols = len(headers)
+        df = pd.DataFrame(columns=headers)
+        for i, line in enumerate(lines[last_row_index+1:]):
+            if line.strip() == '':
+                break
+            row_data = line.split(',')
+            row = {}
+            for j in range(num_cols):
+                row[headers[j]] = row_data[j]
+            df = df.append(row, ignore_index=True)
+        for col in headers:
+            if col.startswith('Unnamed'):
+                df = df.drop(col, axis=1)
+        df = df.apply(pd.to_numeric, errors='ignore')
+        tables[table_name] = df
+        lines = lines[last_row_index+1+i+1:]
+    return tables
 
-    # Loop through each line in the CSV
-    while current_row_index < len(lines):
-        line = lines[current_row_index].strip()
-
-        # Check if this line is a new table
-        if re.match(r'^[,\s]*$', line):
-            current_table_name = None
-            current_table_hierarchy = None
-            current_table_data = []
-
-        # Check if this line contains a table name
-        elif not current_table_name:
-            current_table_name = line
-            current_table_data = []
-            current_table_hierarchy = []
-            # Find end of table and calculate column totals
-            for i in range(current_row_index, len(lines)):
-                if re.match(r'^[^\s,]', lines[i]):
-                    # This is the end of the table
-                    break
-                if not re.match(r'^[,\s]*$', lines[i]):
-                    # This line is not empty, so calculate column totals
-                    row_totals = lines[i].split(',')
-                    row_totals = [float(x) if x != '' else 0.0 for x in row_totals]
-                    current_table_data.append(row_totals)
-                current_row_index += 1
-
-        # Check if this line contains hierarchy information for the table
-        elif not current_table_hierarchy:
-            current_table_hierarchy.append(line)
-            # Calculate the number of hierarchy levels from the number of empty rows
-            num_levels = 0
-            while re.match(r'^[,\s]*$', lines[current_row_index + num_levels]):
-                num_levels += 1
-            # Loop through the hierarchy rows and create a list of parent indices for each level
-            current_table_hierarchy.append([])
-            current_parent_indices = [0]
-            current_level = 1
-            for i in range(current_row_index + 1, current_row_index + num_levels):
-                line = lines[i].strip()
-                if line:
-                    # This line is a parent cell
-                    parent_index = len(current_table_hierarchy[current_level-1]) - 1
-                    current_table_hierarchy[current_level].append(parent_index)
-                    current_table_hierarchy[current_level-1].append(len(current_table_hierarchy[current_level]) - 1)
-                    current_parent_indices.append(parent_index)
-                    current_level += 1
-                else:
-                    # This line is an empty row, so decrement the current level
-                    current_parent_indices.pop()
-                    current_level -= 1
-            current_row_index += num_levels - 1
-
-        # This line contains table data
-        else:
-            row = [x.strip() for x in line.split(',')]
-            # Check if this row contains a header
-            if row[0]:
-                header_row = [x for x in row[3:] if x]
-                header_levels = [[] for _ in range(len(header_row))]
-                for i, header in enumerate(header_row):
-                    parent_index = current_table_hierarchy[len(header) // 2][i]
-                    header_levels[len(header) - 1].append((parent_index, header))
-                current_table_data.append([''] * 3 + header_row)
-            else:
-                # This row contains data
-                current_row = row[3:]
                
 
     
