@@ -100,43 +100,52 @@ def main():
     # Parse CSV to extract contingency tables
 def extract_tables(csv):
     tables = {}
-    for col in csv.columns:
-        if csv[col].iloc[0] == 'Class: Question':
-            question = csv[col].iloc[1]
-            tables[question] = csv.iloc[:, csv.columns.get_loc(col):].dropna(how='all')
-            tables[question].columns = tables[question].iloc[0]
-            tables[question] = tables[question].iloc[1:]
+    for row_idx in range(csv.shape[0]):
+        if not pd.isna(csv.iloc[row_idx, 0]):
+            table_name = csv.iloc[row_idx, 0]
+            tables[table_name] = pd.DataFrame(columns=csv.iloc[row_idx+1:, 0])
+            tables[table_name].index.name = csv.columns[0]
+
+            for col_idx in range(1, csv.shape[1]):
+                if not pd.isna(csv.iloc[row_idx+1, col_idx]):
+                    cat_name = csv.iloc[row_idx+1, col_idx]
+                    level = len([c for c in cat_name if c == ','])
+                    cat_data = pd.Series(csv.iloc[row_idx+2:, col_idx].values, index=tables[table_name].columns, dtype=float)
+                    cat_data.name = cat_name
+                    if level == 0:
+                        tables[table_name] = tables[table_name].append(cat_data)
+                    else:
+                        parent_cat_name = cat_name.rsplit(',', 1)[0]
+                        parent_cat_data = tables[table_name].loc[parent_cat_name]
+                        tables[table_name].loc[cat_name] = cat_data - parent_cat_data
+            tables[table_name].fillna(0, inplace=True)
     return tables
 
+
 # Generate plot based on user selections and customizations
-def generate_plot(table, x_col, y_cols, plot_type, colors, title, subtitle, direction, x_label, y_label, x_tick_labels, y_tick_labels, grid, legend, style):
-    fig, ax = plt.subplots()
-    if plot_type == "bar":
-        table.plot(x=x_col, y=y_cols, kind=plot_type, color=colors, ax=ax)
-    else:
-        table.plot(x=x_col, y=y_cols, kind=plot_type, color=colors, ax=ax, legend=False)
-    ax.set_title(title)
-    ax.set_xlabel(x_label)
-    ax.set_ylabel(y_label)
-    ax.set_xticklabels(x_tick_labels)
-    ax.set_yticklabels(y_tick_labels)
-    if subtitle:
-        ax.text(0.5, 1.08, subtitle, horizontalalignment='center', transform=ax.transAxes, fontsize=12)
-    if grid:
-        ax.grid(True)
-    if legend:
-        ax.legend(legend)
-    if style:
-        plt.style.use(style)
-    if direction == "horizontal":
-        ax.invert_yaxis()
-    return fig
-                      
-# Run main program
-if __name__ == "__main__":
-    main()
+def generate_plot(csv_file, table_name, category_path):
+    csv = pd.read_csv(csv_file, header=None)
+    tables = extract_tables(csv)
+    table = tables[table_name]
+    category_names = [category.strip() for category in category_path.split('>')]
 
+    # filter the table based on the selected category path
+    filtered_table = table.copy()
+    for i in range(len(category_names)):
+        category_name = category_names[i]
+        if category_name:
+            level = i + 1
+            if level == 1:
+                filtered_table = filtered_table.loc[[name.startswith(category_name + ',') for name in filtered_table.index]]
+            else:
+                parent_category_name = category_names[i-1]
+                parent_category_data = filtered_table.loc[parent_category_name]
+                filtered_table = filtered_table.loc[[name == category_name or name.startswith(category_name + ',') for name in filtered_table.index]]
+                filtered_table = filtered_table.sub(parent_category_data, axis=1)
 
-
-
-
+    # plot the filtered table
+    fig, ax = plt.subplots(figsize=(10, 6))
+    ax.axis('off')
+    ax.axis('tight')
+    ax.table(cellText=filtered_table.values, colLabels=filtered_table.columns, rowLabels=filtered_table.index, loc='center')
+    plt.show()
