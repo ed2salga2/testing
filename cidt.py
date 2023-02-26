@@ -24,15 +24,16 @@ def extract_tables(csv):
             # Extract table data
             table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, :num_cols]
             table_data = table_data.fillna('')
+            table_data = table_data.reset_index(drop=True)
             table_data = table_data.set_index([table_data.columns[0], table_data.columns[1]])
-            table_data.index.names = [None, 'Column']
+            table_data.index.names = [None, None]
             table_data.columns.name = None
             table_data = table_data.apply(pd.to_numeric, errors='coerce')
             tables[table_name] = table_data
 
             # Extract parent/child header information
             headers = {}
-            parent_headers = list(table_data.columns)
+            parent_headers = list(table_data.columns.get_level_values(0).unique())
             child_headers = list(reduce(lambda x, y: x + y, pd.crosstab(index=table_data.index, columns=[table_data[c] for c in parent_headers]).columns))
             for parent in parent_headers:
                 child_start_idx = parent_headers.index(parent) * len(table_data.index)
@@ -47,6 +48,7 @@ def extract_tables(csv):
             table_idx += 1
             
     return tables
+
 
 
 def generate_plot(table_data, title):
