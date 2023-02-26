@@ -34,7 +34,7 @@ def extract_tables(csv):
                 headers = {}
                 num_levels = table_data.columns.nlevels
                 for level in range(num_levels):
-                    if level < num_levels:
+                    if level < len(table_data.columns.levels):
                         header_level = [h for h in table_data.columns.levels[level] if h]
                         if header_level:
                             headers[header_level[0]] = list(table_data.columns.get_level_values(level + 1))
@@ -47,6 +47,7 @@ def extract_tables(csv):
                 table_idx += 1
 
     return tables
+
 
 
 
