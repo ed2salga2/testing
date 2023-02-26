@@ -26,7 +26,7 @@ def extract_tables(csv):
                 num_rows += 1
 
             # Extract table data
-            table_data = csv.loc[data_start_idx:data_start_idx + num_rows - 1, col_start_idx:col_end_idx - 1]
+            table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, col_start_idx:col_end_idx]
             table_data = table_data.fillna('')
             table_data = table_data.set_index(table_data.columns[0])
             table_data.index.name = None
