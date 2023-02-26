@@ -32,17 +32,21 @@ def extract_tables(csv):
             table_data = table_data.fillna('')
             table_data = table_data.set_index(table_data.columns[0])
             table_data.index.name = None
-            table_data.columns.names = [f"Level {i+1}" for i in range(table_data.columns.nlevels)]
+            table_data.columns.name = None
             table_data = table_data.apply(pd.to_numeric, errors='coerce')
             tables[table_name] = table_data
 
             # Extract parent/child header information
-            hierarchy_levels = []
-            for level in range(table_data.columns.nlevels):
-                header_level = [h for h in table_data.columns.levels[level] if h]
-                if header_level:
-                    hierarchy_levels.append(header_level)
-            tables[table_name]['hierarchy_levels'] = hierarchy_levels
+            headers = {}
+            if isinstance(table_data.columns, pd.MultiIndex):
+                for level in range(table_data.columns.nlevels):
+                    header_level = [h for h in table_data.columns.levels[level] if h]
+                    if header_level:
+                        headers[header_level[0]] = header_level[1:]
+            else:
+                headers[table_data.columns[0]] = list(table_data.columns)[1:]
+
+            tables[table_name + '_headers'] = headers
 
             # Move to next table
             table_idx = data_start_idx + num_rows
@@ -50,6 +54,7 @@ def extract_tables(csv):
             table_idx += 1
 
     return tables
+
 
 
 
