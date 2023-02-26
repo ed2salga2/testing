@@ -149,3 +149,13 @@ def generate_plot(csv_file, table_name, category_path):
     ax.axis('tight')
     ax.table(cellText=filtered_table.values, colLabels=filtered_table.columns, rowLabels=filtered_table.index, loc='center')
     plt.show()
+
+                      
+# Run main program
+if __name__ == "__main__":
+    main()
+
+
+
+
+
