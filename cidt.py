@@ -37,9 +37,10 @@ def get_table_headers(tables):
 
     return table_headers
 
+
 # Define the extract_tables function
 def extract_tables(csv):
-    try:
+
         # Read the CSV string into a pandas dataframe
         df = pd.read_csv(StringIO(csv), header=None)
 
@@ -74,9 +75,6 @@ def extract_tables(csv):
 
         return tables
     
-    except Exception as e:
-        print(e)
-        return {}
 
 # Define the plot_table function
 def plot_table_data(tables, table_name):
