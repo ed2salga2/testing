@@ -8,20 +8,16 @@ def extract_tables(csv):
     table_idx = 0
     while table_idx < len(csv.index):
         # Look for table name in first column
-        if not pd.isna(csv.iloc[table_idx, 0]):
-            table_name = csv.iloc[table_idx, 0]
+        if not pd.isna(csv.loc[table_idx, csv.columns[0]]):
+            table_name = csv.loc[table_idx, csv.columns[0]]
             data_start_idx = table_idx + 2
 
             # Determine table dimensions
-            num_cols = 0
-            while num_cols < csv.shape[1] and not pd.isna(csv.iloc[table_idx + 1, num_cols]) and num_cols < len(csv.columns):
-                num_cols += 1
-            num_rows = 0
-            while data_start_idx + num_rows < len(csv.index) and not pd.isna(csv.iloc[data_start_idx + num_rows, 0]):
-                num_rows += 1
+            num_cols = csv.loc[table_idx + 1].count()
+            num_rows = csv.shape[0] - data_start_idx
 
             # Extract table data
-            table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, :num_cols]
+            table_data = csv.loc[data_start_idx:data_start_idx + num_rows, :num_cols]
             table_data = table_data.fillna('')
             table_data = table_data.set_index(table_data.columns[0])
             table_data.index.name = None
@@ -32,11 +28,11 @@ def extract_tables(csv):
             # Extract parent/child header information
             headers = {}
             parent_headers = list(table_data.columns)
-            child_headers = list(reduce(lambda x, y: x + y, pd.crosstab(index=table_data.index, columns=[table_data[c] for c in parent_headers]).columns))
-            for parent in parent_headers:
-                child_start_idx = parent_headers.index(parent) * len(table_data.index)
-                child_end_idx = child_start_idx + len(table_data.index)
-                headers[parent] = child_headers[child_start_idx:child_end_idx]
+            child_headers = [item for sublist in pd.crosstab(index=table_data.index, columns=[table_data[c] for c in parent_headers]).columns for item in sublist]
+            for parent, child in zip(parent_headers, child_headers):
+                if parent not in headers:
+                    headers[parent] = []
+                headers[parent].append(child)
 
             tables[table_name + '_headers'] = headers
 
@@ -46,6 +42,7 @@ def extract_tables(csv):
             table_idx += 1
 
     return tables
+
 
 
 
