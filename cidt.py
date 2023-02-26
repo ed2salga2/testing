@@ -111,7 +111,7 @@ def extract_tables(csv):
             
             # Determine table dimensions
             while col_idx < len(csv.columns) and row_idx+1 < len(csv.index) and pd.isna(csv.iloc[row_idx+1, col_idx]):
-            col_idx += 1
+                col_idx += 1
             num_rows = 0
             while not pd.isna(csv.iloc[row_idx+2+num_rows, 0]):
                 num_rows += 1
