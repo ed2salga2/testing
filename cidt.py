@@ -6,9 +6,6 @@ from functools import reduce
 import pandas as pd
 
 def extract_tables(csv):
-    # Read the CSV file
-    csv = pd.read_csv(csv_file, header=None)
-
     tables = {}
     table_idx = 0
     while table_idx < len(csv.index):
@@ -90,7 +87,7 @@ def generate_plot(table_data, title):
 def main():
     csv_file = st.file_uploader('Upload CSV', type=['csv'])
     if csv_file is not None:
-        csv = pd.read_csv(csv_file)
+        csv = pd.read_csv(csv_file,header=None)
         tables = extract_tables(csv)
         table_names = list(tables.keys())
         if len(table_names) == 0:
