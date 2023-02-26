@@ -79,42 +79,73 @@ def extract_tables(csv):
         return {}
 
 # Define the plot_table function
-def plot_table(table, plot_type, filter_columns, plot_options):
-    # Filter the table based on the filter columns
-    for column, value in filter_columns.items():
-        if value != 'All':
-            table = table[table[column] == value]
+def plot_table_data(tables, table_name):
+    # Check if the selected table is in the tables dictionary
+    if table_name not in tables:
+        st.write('Table not found')
+        return
 
-    # Get the table headers
-    table_headers = get_table_headers({table.name: table})
+    # Get the headers for the selected table
+    headers = [header[0] for header in get_table_headers({table_name: tables[table_name]})[table_name]]
+
+    # Create a dictionary to store the filter options
+    filter_options = {}
+
+    # Loop through the headers and create a filter dropdown for each column
+    for header in headers:
+        unique_values = sorted(list(set(tables[table_name][header].tolist())))
+        filter_options[header] = st.selectbox(f'Select {header}', ['All'] + unique_values)
+
+    # Create a list of available plot types
+    plot_types = ['line', 'bar', 'scatter', 'hist']
+
+    # Create a dropdown to select the plot type
+    plot_type = st.selectbox('Select plot type', plot_types)
 
     # Create a list of tuples representing the columns to plot
     plot_columns = []
     for header in plot_options['Headers']:
-        for col in table.columns:
-            if header in col:
-                plot_columns.append(col)
+        if header in tables[table_name].columns:
+            plot_columns.append((header, 'column'))
+        elif header in tables[table_name].index:
+            plot_columns.append((header, 'index'))
 
-    # Initialize the figure and axis objects
-    fig, ax = plt.subplots()
+    # Check if there are any columns to plot
+    if len(plot_columns) == 0:
+        st.write('No columns selected for plotting')
+        return
 
-    # Check the plot type and plot accordingly
-    if plot_type == 'Bar':
-        table.plot(x=plot_columns[0], y=plot_columns[1:], kind='bar', ax=ax, color=plot_options['Color'])
-    elif plot_type == 'Line':
-        table.plot(x=plot_columns[0], y=plot_columns[1:], kind='line', ax=ax, color=plot_options['Color'])
-    elif plot_type == 'Scatter':
-        table.plot(x=plot_columns[0], y=plot_columns[1], kind='scatter', ax=ax, color=plot_options['Color'])
-    elif plot_type == 'Boxplot':
-        table.plot(x=plot_columns[0], y=plot_columns[1:], kind='box', ax=ax, color=plot_options['Color'])
+    # Create a dictionary to store the plot options
+    plot_options = {
+        'Headers': st.multiselect('Select columns to plot', options=headers),
+        'Title': st.text_input('Enter the plot title', value=table_name),
+        'X Axis Label': st.text_input('Enter the X axis label', value=headers[0]),
+        'Y Axis Label': st.text_input('Enter the Y axis label', value='Count'),
+        'Color': st.color_picker('Select a plot color', value='#1f77b4')
+    }
 
-    # Set the plot title and axis labels
-    ax.set_title(plot_options['Title'])
-    ax.set_xlabel(plot_options['X Axis Label'])
-    ax.set_ylabel(plot_options['Y Axis Label'])
+    # Create a button to plot the selected options
+    plot_button = st.button('Plot')
 
-    # Show the plot
-    st.pyplot(fig)
+    # If the plot button is clicked
+    if plot_button:
+        # Filter the table based on the selected filter options
+        filter_columns = {}
+        for key, value in filter_options.items():
+            if value != 'All':
+                filter_columns[key] = value
+        filtered_table = tables[table_name].copy().reset_index(drop=True)
+        for column, value in filter_columns.items():
+            filtered_table = filtered_table[filtered_table[column] == value]
+
+        # If the filtered table is not empty
+        if not filtered_table.empty:
+            # Plot the table based on the selected plot type and plot options
+            plot_table(filtered_table, plot_type, filter_columns, plot_options)
+        else:
+            # Display a message if the filtered table is empty
+            st.write('No data')
+
 
 # Define the main function
 def main():
