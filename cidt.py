@@ -118,14 +118,13 @@ def extract_tables(csv):
             num_cols = col_idx - 1
             
             # Extract table data
-            cat_data = pd.DataFrame(csv.iloc[row_idx+2:row_idx+2+num_rows, :num_cols+1].values)
-            cat_data.columns = cat_data.iloc[0]
-            cat_data = cat_data.iloc[1:]
-            cat_data = cat_data.set_index(cat_data.columns[0])
-            cat_data.index.name = None
-            cat_data.columns.name = None
-            cat_data = cat_data.apply(pd.to_numeric, errors='ignore')
-            tables[table_name] = cat_data
+            table_data = csv.iloc[row_idx+2:row_idx+2+num_rows, :num_cols+1]
+            table_data = table_data.dropna(how='all')
+            table_data = table_data.set_index(table_data.columns[0])
+            table_data.index.name = None
+            table_data.columns.name = None
+            table_data = table_data.apply(pd.to_numeric, errors='ignore')
+            tables[table_name] = table_data
             
             # Extract parent/child header information
             headers = {}
@@ -133,8 +132,8 @@ def extract_tables(csv):
                 header_level = 0
                 header_name = ""
                 header_list = []
-                for i in range(len(cat_data.columns)):
-                    col_name = cat_data.columns[i]
+                for i in range(len(table_data.columns)):
+                    col_name = table_data.columns[i]
                     if isinstance(col_name, str):
                         while len(header_list) > header_level:
                             header_list.pop()
