@@ -100,27 +100,52 @@ def main():
     # Parse CSV to extract contingency tables
 def extract_tables(csv):
     tables = {}
+    table_dims = {}  # dictionary to store dimensions of each table
+
+    # Scan CSV file to get table dimensions
     for row_idx in range(csv.shape[0]):
         if not pd.isna(csv.iloc[row_idx, 0]):
             table_name = csv.iloc[row_idx, 0]
-            non_null_columns = csv.columns[~csv.iloc[row_idx+1:, :].isnull().all(axis=0)]
-            tables[table_name] = pd.DataFrame(columns=non_null_columns)
-            tables[table_name].index.name = csv.columns[0]
+            table_dims[table_name] = {'rows': 0, 'cols': 0}
 
-            for col_idx in range(1, len(non_null_columns)):
+            for col_idx in range(1, csv.shape[1]):
                 if not pd.isna(csv.iloc[row_idx+1, col_idx]):
-                    cat_name = csv.iloc[row_idx+1, col_idx]
-                    level = len([c for c in cat_name if c == ','])
-                    cat_data = pd.Series(csv.loc[row_idx+2:, csv.columns[col_idx]].values, index=tables[table_name].columns, dtype=float)
-                    cat_data.name = cat_name
-                    if level == 0:
-                        tables[table_name] = tables[table_name].append(cat_data)
-                    else:
-                        parent_cat_name = cat_name.rsplit(',', 1)[0]
-                        parent_cat_data = tables[table_name].loc[parent_cat_name]
-                        tables[table_name].loc[cat_name] = cat_data - parent_cat_data
-            tables[table_name].fillna(0, inplace=True)
+                    table_dims[table_name]['cols'] += 1
+                    for i in range(row_idx+2, csv.shape[0]):
+                        if not pd.isna(csv.iloc[i, col_idx]):
+                            table_dims[table_name]['rows'] += 1
+                        else:
+                            break
+
+    # Create dataframes for each table
+    for table_name in table_dims:
+        table_rows = table_dims[table_name]['rows']
+        table_cols = table_dims[table_name]['cols']
+        tables[table_name] = pd.DataFrame(index=range(table_rows), columns=range(table_cols))
+        tables[table_name].index.name = csv.columns[0]
+
+        # Fill dataframe with values
+        curr_row = 0
+        for row_idx in range(csv.shape[0]):
+            if not pd.isna(csv.iloc[row_idx, 0]):
+                if csv.iloc[row_idx, 0] == table_name:
+                    for col_idx in range(1, csv.shape[1]):
+                        if not pd.isna(csv.iloc[row_idx+1, col_idx]):
+                            cat_name = csv.iloc[row_idx+1, col_idx]
+                            level = len([c for c in cat_name if c == ','])
+                            cat_data = pd.Series(csv.loc[row_idx+2:, csv.columns[col_idx]].values, dtype=float)
+                            cat_data.name = cat_name
+                            if level == 0:
+                                tables[table_name].loc[curr_row] = cat_data.values
+                                curr_row += 1
+                            else:
+                                parent_cat_name = cat_name.rsplit(',', 1)[0]
+                                parent_cat_data = tables[table_name].loc[parent_cat_name]
+                                tables[table_name].loc[cat_name] = cat_data - parent_cat_data
+        tables[table_name].fillna(0, inplace=True)
+
     return tables
+
 
 
 
