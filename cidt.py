@@ -5,75 +5,95 @@ import matplotlib.pyplot as plt
 from io import StringIO
 
 # Define the get_table_headers function
-def get_table_headers(tables):
-    # Initialize an empty dictionary to store the table headers
-    table_headers = {}
+import pandas as pd
+import re
 
-    # Loop through the keys and values of the tables dictionary
-    for table_name, table_df in tables.items():
-        
-        # Get the crosstab headers by selecting the first row and first column of the dataframe
-        headers = table_df.iloc[0, 1:].tolist() + table_df.iloc[1:, 0].tolist()
-
-        # Remove any NaN values from the headers list
-        headers = [header for header in headers if not pd.isna(header)]
-
-        # Initialize an empty list to store the header hierarchy
-        header_hierarchy = []
-
-        # Loop through the headers list and create a list of tuples representing the hierarchy
-        for header in headers:
-            if len(header_hierarchy) == 0:
-                header_hierarchy.append((header,))
-            else:
-                current_level = header_hierarchy[-1]
-                if header in table_df.columns:
-                    header_hierarchy[-1] = current_level + (header,)
-                else:
-                    header_hierarchy.append((header,))
-
-        # Store the header hierarchy in the table_headers dictionary with the table name as the key
-        table_headers[table_name] = header_hierarchy
-
-    return table_headers
-
-
-# Define the extract_tables function
 def extract_tables(csv):
+    """
+    Parse CSV string and return a dictionary of tables.
 
-        # Read the CSV string into a pandas dataframe
-        df = pd.read_csv(StringIO(csv), header=None)
+    Each table is a pandas DataFrame and is keyed by its table name.
+    """
 
-        # Initialize an empty dictionary to store the tables
-        tables = {}
+    # Split CSV string into a list of lines
+    lines = csv.split('\n')
 
-        # Loop through the dataframe rows
-        for i in range(len(df)):
-            row = df.iloc[i]
+    # Initialize variables
+    tables = {}
+    current_table_name = None
+    current_table_data = []
+    current_table_hierarchy = None
+    current_row_index = 0
 
-            # Check if the row contains the start of a new table
-            if not pd.isnull(row[1]) and pd.isnull(row[2]):
+    # Loop through each line in the CSV
+    while current_row_index < len(lines):
+        line = lines[current_row_index].strip()
 
-                # Extract the table name from the first non-blank cell in the row
-                table_name = row[row.notnull()].iloc[0]
+        # Check if this line is a new table
+        if re.match(r'^[,\s]*$', line):
+            current_table_name = None
+            current_table_hierarchy = None
+            current_table_data = []
 
-                # Remove any non-alphanumeric characters from the table name and convert to lowercase
-                table_name = ''.join(e for e in table_name if e.isalnum()).lower()
+        # Check if this line contains a table name
+        elif not current_table_name:
+            current_table_name = line
+            current_table_data = []
+            current_table_hierarchy = []
+            # Find end of table and calculate column totals
+            for i in range(current_row_index, len(lines)):
+                if re.match(r'^[^\s,]', lines[i]):
+                    # This is the end of the table
+                    break
+                if not re.match(r'^[,\s]*$', lines[i]):
+                    # This line is not empty, so calculate column totals
+                    row_totals = lines[i].split(',')
+                    row_totals = [float(x) if x != '' else 0.0 for x in row_totals]
+                    current_table_data.append(row_totals)
+                current_row_index += 1
 
-                # Create a new dataframe for the table, starting from the next row
-                table_df = pd.DataFrame(columns=row[1:])
+        # Check if this line contains hierarchy information for the table
+        elif not current_table_hierarchy:
+            current_table_hierarchy.append(line)
+            # Calculate the number of hierarchy levels from the number of empty rows
+            num_levels = 0
+            while re.match(r'^[,\s]*$', lines[current_row_index + num_levels]):
+                num_levels += 1
+            # Loop through the hierarchy rows and create a list of parent indices for each level
+            current_table_hierarchy.append([])
+            current_parent_indices = [0]
+            current_level = 1
+            for i in range(current_row_index + 1, current_row_index + num_levels):
+                line = lines[i].strip()
+                if line:
+                    # This line is a parent cell
+                    parent_index = len(current_table_hierarchy[current_level-1]) - 1
+                    current_table_hierarchy[current_level].append(parent_index)
+                    current_table_hierarchy[current_level-1].append(len(current_table_hierarchy[current_level]) - 1)
+                    current_parent_indices.append(parent_index)
+                    current_level += 1
+                else:
+                    # This line is an empty row, so decrement the current level
+                    current_parent_indices.pop()
+                    current_level -= 1
+            current_row_index += num_levels - 1
 
-                # Loop through the next rows until the end of the table
-                j = i + 1
-                while j < len(df) and not pd.isnull(df.iloc[j][1]):
-                    row = df.iloc[j]
-                    table_df.loc[len(table_df)] = row[1:]
-                    j += 1
+        # This line contains table data
+        else:
+            row = [x.strip() for x in line.split(',')]
+            # Check if this row contains a header
+            if row[0]:
+                header_row = [x for x in row[3:] if x]
+                header_levels = [[] for _ in range(len(header_row))]
+                for i, header in enumerate(header_row):
+                    parent_index = current_table_hierarchy[len(header) // 2][i]
+                    header_levels[len(header) - 1].append((parent_index, header))
+                current_table_data.append([''] * 3 + header_row)
+            else:
+                # This row contains data
+                current_row = row[3:]
+               
 
-                # Store the table in the dictionary with the cleaned table name as the key
-                tables[table_name] = table_df
-
-        return tables
     
 
 # Define the plot_table function
