@@ -28,7 +28,7 @@ def extract_tables(csv):
             if num_cols > 1:
                 table_data = table_data.set_index([table_name] + list(range(1, num_cols)))
             else:
-                table_data = table_data.set_index(table_name)
+                table_data = table_data.set_index(table_name,drop = True)
                 
             table_data.index.name = None
             table_data.columns.name = None
