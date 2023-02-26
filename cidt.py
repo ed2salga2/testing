@@ -13,8 +13,12 @@ def extract_tables(csv):
             data_start_idx = table_idx + 2
 
             # Determine table dimensions
-            num_cols = csv.loc[table_idx + 1].count()
-            num_rows = csv.shape[0] - data_start_idx
+            col_start_idx = pd.IndexSlice[table_idx+1, :]
+            col_end_idx = pd.IndexSlice[table_idx+1, None]
+            num_cols = csv.loc[:, col_start_idx:col_end_idx].count().iloc[0]
+            row_start_idx = pd.IndexSlice[data_start_idx:data_start_idx+1, 0]
+            row_end_idx = pd.IndexSlice[None, 0]
+            num_rows = csv.loc[row_start_idx:row_end_idx, :].count().iloc[0]
 
             # Extract table data
             table_data = csv.loc[data_start_idx:data_start_idx + num_rows, :num_cols]
@@ -42,6 +46,7 @@ def extract_tables(csv):
             table_idx += 1
 
     return tables
+
 
 
 
