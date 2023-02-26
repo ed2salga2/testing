@@ -24,7 +24,7 @@ def extract_tables(csv):
             # Extract table data
             table_data = csv.iloc[data_start_idx:data_start_idx + num_rows, :num_cols]
             table_data = table_data.fillna('')
-            table_data = table_data.set_index(table_data.columns[0])
+            table_data = table_data.set_index(table_data.columns[0],drop False)
             table_data.index.name = None
             table_data.columns.name = None
             table_data = table_data.apply(pd.to_numeric, errors='coerce')
