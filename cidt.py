@@ -39,39 +39,44 @@ def get_table_headers(tables):
 
 # Define the extract_tables function
 def extract_tables(csv):
-    # Read the CSV string into a pandas dataframe
-    df = pd.read_csv(StringIO(csv), header=None)
+    try:
+        # Read the CSV string into a pandas dataframe
+        df = pd.read_csv(StringIO(csv), header=None)
 
-    # Initialize an empty dictionary to store the tables
-    tables = {}
+        # Initialize an empty dictionary to store the tables
+        tables = {}
 
-    # Loop through the dataframe rows
-    for i in range(len(df)):
-        row = df.iloc[i]
+        # Loop through the dataframe rows
+        for i in range(len(df)):
+            row = df.iloc[i]
 
-        # Check if the row contains the start of a new table
-        if not pd.isnull(row[1]) and pd.isnull(row[2]):
+            # Check if the row contains the start of a new table
+            if not pd.isnull(row[1]) and pd.isnull(row[2]):
 
-            # Extract the table name from the first non-blank cell in the row
-            table_name = row[row.notnull()].iloc[0]
+                # Extract the table name from the first non-blank cell in the row
+                table_name = row[row.notnull()].iloc[0]
 
-            # Remove any non-alphanumeric characters from the table name and convert to lowercase
-            table_name = ''.join(e for e in table_name if e.isalnum()).lower()
+                # Remove any non-alphanumeric characters from the table name and convert to lowercase
+                table_name = ''.join(e for e in table_name if e.isalnum()).lower()
 
-            # Create a new dataframe for the table, starting from the next row
-            table_df = pd.DataFrame(columns=row[1:])
+                # Create a new dataframe for the table, starting from the next row
+                table_df = pd.DataFrame(columns=row[1:])
 
-            # Loop through the next rows until the end of the table
-            j = i + 1
-            while j < len(df) and not pd.isnull(df.iloc[j][1]):
-                row = df.iloc[j]
-                table_df.loc[len(table_df)] = row[1:]
-                j += 1
+                # Loop through the next rows until the end of the table
+                j = i + 1
+                while j < len(df) and not pd.isnull(df.iloc[j][1]):
+                    row = df.iloc[j]
+                    table_df.loc[len(table_df)] = row[1:]
+                    j += 1
 
-            # Store the table in the dictionary with the cleaned table name as the key
-            tables[table_name] = table_df
+                # Store the table in the dictionary with the cleaned table name as the key
+                tables[table_name] = table_df
 
-    return tables
+        return tables
+    
+    except Exception as e:
+        print(e)
+        return {}
 
 # Define the plot_table function
 def plot_table(table, plot_type, filter_columns, plot_options):
