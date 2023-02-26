@@ -3,7 +3,12 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from functools import reduce
 
+import pandas as pd
+
 def extract_tables(csv):
+    # Read the CSV file
+    csv = pd.read_csv(csv_file, header=None)
+
     tables = {}
     table_idx = 0
     while table_idx < len(csv.index):
@@ -32,7 +37,7 @@ def extract_tables(csv):
             table_data.index.name = None
             table_data.columns.name = None
             table_data = table_data.apply(pd.to_numeric, errors='coerce')
-            tables[table_name] = table_data
+            tables[table_name] = {'data': table_data}
 
             # Extract parent/child header information
             headers = {}
@@ -43,7 +48,17 @@ def extract_tables(csv):
                     headers[parent] = []
                 headers[parent].append(child)
 
-            tables[table_name + '_headers'] = headers
+            tables[table_name]['headers'] = headers
+
+            # Extract hierarchy levels
+            header_rows = table_data.columns.nlevels
+            hierarchy_levels = []
+            for i in range(header_rows):
+                level = []
+                for j in range(len(table_data.columns.levels[i])):
+                    level.append(table_data.columns.levels[i][j])
+                hierarchy_levels.append(level)
+            tables[table_name]['hierarchy_levels'] = hierarchy_levels
 
             # Move to next table
             table_idx = data_start_idx + num_rows
@@ -51,6 +66,7 @@ def extract_tables(csv):
             table_idx += 1
 
     return tables
+
 
 
 
