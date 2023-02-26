@@ -3,7 +3,6 @@ import pandas as pd
 import matplotlib.pyplot as plt
 from functools import reduce
  
-
 def extract_tables(csv):
     # Split the CSV by blank rows
     tables_csv = [g for _, g in csv.groupby((csv.isnull() | (csv == '')).all(1))]
@@ -49,7 +48,6 @@ def extract_tables(csv):
     return tables
 
 
-
 def generate_plot(table_data, title):
     fig, ax = plt.subplots()
     table_data.plot(kind='bar', x='Category', y='Value', ax=ax)
@@ -58,10 +56,11 @@ def generate_plot(table_data, title):
     ax.set_ylabel(table_data.columns[1])
     st.pyplot(fig)
 
+
 def main():
     csv_file = st.file_uploader('Upload CSV', type=['csv'])
     if csv_file is not None:
-        csv = pd.read_csv(csv_file,header=None)
+        csv = pd.read_csv(csv_file, header=None)
         tables = extract_tables(csv)
         table_names = list(tables.keys())
         if len(table_names) == 0:
@@ -70,6 +69,7 @@ def main():
             table_name = st.selectbox('Select table', table_names)
             st.write(tables[table_name])
             generate_plot(tables[table_name], table_name)
+
 
 if __name__ == '__main__':
     main()
