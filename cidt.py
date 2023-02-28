@@ -8,50 +8,54 @@ from io import StringIO
 import pandas as pd
 import re
 
+from io import BytesIO
+from savReaderWriter import SavReader
+
 def extract_tables(csv):
-    lines = csv_file.getvalue().split('\n')
     tables = {}
-    while len(lines) > 0:
-        if lines[0] == '':
-            lines.pop(0)
-            continue
-        table_name = None
-        for i, line in enumerate(lines):
-            if line.strip() != '':
-                table_name = line
-                break
-        if not table_name:
-            break
-        lines = lines[i+1:]
-        last_row_index = None
-        for i, line in enumerate(lines):
-            if line.strip() == '':
-                last_row_index = i
-                break
-        if not last_row_index:
-            last_row_index = len(lines)
-        total_row = last_row_index
-        headers = []
-        for i, line in enumerate(lines[:last_row_index]):
-            if line.strip() != '':
-                headers.append(line)
-        num_cols = len(headers)
-        df = pd.DataFrame(columns=headers)
-        for i, line in enumerate(lines[last_row_index+1:]):
-            if line.strip() == '':
-                break
-            row_data = line.split(',')
-            row = {}
-            for j in range(num_cols):
-                row[headers[j]] = row_data[j]
-            df = df.append(row, ignore_index=True)
-        for col in headers:
-            if col.startswith('Unnamed'):
-                df = df.drop(col, axis=1)
-        df = df.apply(pd.to_numeric, errors='ignore')
-        tables[table_name] = df
-        lines = lines[last_row_index+1+i+1:]
+    with BytesIO(csv) as f:
+        with SavReader(f) as reader:
+            # Extract each table from the SPSS file
+            while True:
+                try:
+                    # Find the start of the next table
+                    while True:
+                        # Read the next line from the SPSS file
+                        row = reader.next()
+                        if row[0] != b'':
+                            break
+                    # The first non-empty cell in this row is the table name
+                    table_name = row[0].decode('utf-8')
+                    tables[table_name] = {}
+                    # Find the end of the table (the "Total" row)
+                    while True:
+                        row = reader.next()
+                        if row[0] == b'Total':
+                            break
+                    # Get the column headers from the row above the data
+                    headers = [col.decode('utf-8') for col in row]
+                    # Find the start of the data
+                    while True:
+                        row = reader.next()
+                        if row[0] != b'Total':
+                            break
+                    # Get the row indexes from the first column
+                    index_cols = [row[0].decode('utf-8') for row in reader]
+                    # Get the data from the remaining columns
+                    data_cols = [list(row)[1:] for row in reader]
+                    # Store the data in a pandas dataframe
+                    df = pd.DataFrame(data_cols, index=index_cols, columns=headers[1:])
+                    tables[table_name]['data'] = df
+                    # Get the header hierarchy from the fourth column
+                    header_hierarchy = []
+                    for row in reader:
+                        if row[3] != b'':
+                            header_hierarchy.append(row[3].decode('utf-8'))
+                    tables[table_name]['header_hierarchy'] = header_hierarchy
+                except StopIteration:
+                    break
     return tables
+
 
                
 
