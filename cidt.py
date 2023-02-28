@@ -12,49 +12,80 @@ from io import BytesIO
 from savReaderWriter import SavReader
 
 def extract_tables(csv):
+    df = pd.read_spss(csv)
+
+    # find empty cells in dataframe
+    empty_cells = df.isna()
+
     tables = {}
-    with BytesIO(csv) as f:
-        with SavReader(f) as reader:
-            # Extract each table from the SPSS file
-            while True:
-                try:
-                    # Find the start of the next table
-                    while True:
-                        # Read the next line from the SPSS file
-                        row = reader.next()
-                        if row[0] != b'':
-                            break
-                    # The first non-empty cell in this row is the table name
-                    table_name = row[0].decode('utf-8')
-                    tables[table_name] = {}
-                    # Find the end of the table (the "Total" row)
-                    while True:
-                        row = reader.next()
-                        if row[0] == b'Total':
-                            break
-                    # Get the column headers from the row above the data
-                    headers = [col.decode('utf-8') for col in row]
-                    # Find the start of the data
-                    while True:
-                        row = reader.next()
-                        if row[0] != b'Total':
-                            break
-                    # Get the row indexes from the first column
-                    index_cols = [row[0].decode('utf-8') for row in reader]
-                    # Get the data from the remaining columns
-                    data_cols = [list(row)[1:] for row in reader]
-                    # Store the data in a pandas dataframe
-                    df = pd.DataFrame(data_cols, index=index_cols, columns=headers[1:])
-                    tables[table_name]['data'] = df
-                    # Get the header hierarchy from the fourth column
-                    header_hierarchy = []
-                    for row in reader:
-                        if row[3] != b'':
-                            header_hierarchy.append(row[3].decode('utf-8'))
-                    tables[table_name]['header_hierarchy'] = header_hierarchy
-                except StopIteration:
+    current_table = None
+
+    for i, row in df.iterrows():
+        # Check if row is empty
+        if row.isnull().all():
+            continue
+
+        # Check if row is the start of a new table
+        if empty_cells.loc[i, 0]:
+            table_name = row[0]
+            tables[table_name] = {}
+            current_table = table_name
+            tables[table_name]['header_rows'] = []
+
+            # find end of table row
+            for j, value in row.iteritems():
+                if pd.notna(value):
+                    end_row = j
                     break
+
+            # find row indexes
+            tables[table_name]['row_indexes'] = [x for x in range(i+1, df.shape[0]-1) if not empty_cells.loc[x, 0]]
+
+            # find header rows
+            header_rows = []
+            for k in range(i+1, df.shape[0]-1):
+                if empty_cells.loc[k, 3]:
+                    header_rows.append(k)
+            tables[table_name]['header_rows'] = header_rows
+
+            # initialize table data as empty dataframe
+            table_data = pd.DataFrame(columns=df.loc[i:end_row-1, 3:end_row].iloc[0])
+
+            # fill table data with values
+            for k in range(i+2, end_row):
+                table_data.loc[k-1] = df.loc[k, 3:end_row]
+
+            # set row indexes
+            table_data.index = tables[table_name]['row_indexes']
+
+            # set table data in tables dictionary
+            tables[table_name]['data'] = table_data
+
+            # set header levels
+            header_levels = {}
+            parent_stack = []
+            for header_row in header_rows:
+                row = df.loc[header_row, 3:end_row]
+                row_levels = []
+                for cell in row:
+                    if pd.notna(cell):
+                        level = len(parent_stack)
+                        if level not in header_levels:
+                            header_levels[level] = []
+                        if level == 0:
+                            parent_stack = [cell]
+                        else:
+                            if level-1 < len(parent_stack):
+                                parent_stack = parent_stack[:level-1]
+                            parent_stack.append(cell)
+                        row_levels.append(level)
+                    else:
+                        row_levels.append(np.nan)
+                header_levels[len(parent_stack)] = list(set(row_levels))
+            tables[table_name]['header_levels'] = header_levels
+
     return tables
+
 
 
                
