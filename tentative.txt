@@ -3,7 +3,6 @@ import pandas as pd
 import altair as alt
 import json
 import argparse
-import os
 
 
 def initialize_and_upload():

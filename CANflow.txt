@@ -16,7 +16,7 @@ Method 2) c) OPTIONAL Button by User: RUN JOB. THE USER has the option to run a 
 
 Method 3) Live preview:
 a) Selects one of the "P#..." columns as row categorical index for the pd.crosstab.
-b) User inputs the amount (integer) of elements he wants to introduce in the column array for the crosstab with a slider: amount determined by the quantity of rows between POND column and the first "P#" column. This means the integer (elements) cannot be higher than the amount of categorical columns between these two columns. This quantity may vary depending on the uploaded file.
+b) User inputs the amount (integer) of elements he wants to introduce in the column array for the crosstab with a slider. This amount is determined by the quantity of columns between POND column and the first "P#" column. This means the integer (elements) cannot be higher than the amount of categorical columns between these two columns. This quantity may vary depending on the uploaded file.
 c) User defines the order of categorical columns (elements, on the last step) to create the input column array for the crosstab [].
 Such that pd.crosstab(2.a,[2.c])
 d) Altair visualization can now be live previewed from the crosstab() filter in a default bar chart ploted with plotly.
