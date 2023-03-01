@@ -1,0 +1,48 @@
+YOU CAN help me code main.py for a "Crosstab Plotter" streamlit app, pandas, json and plotly for visualization:
+
+The following is just the sample of the dataframe:
+
+	SbjNum	POND	f1	sex	edad	educa	P2	P3	P4	P5	...	P77.10	P77.11	P77.12	P77.13	P77.14	P77.15	P78	P79	P80	P81
+0	170252454.0	0.704913	Coclé	Femenino	35-44	Secundaria incompleta	Por el camino correcto	Alto costo de la vida	Nada probable	Peor	...	Algo	Algo	Poco	Mucho	Mucho	Algo	Nada de acuerdo	Ninguno	Nada de acuerdo	Evangélico/Protestante
+
+WORKFLOW: 
+
+1) Initialize and Upload
+a) ask for the .sav file upload
+b) read the sav file with pd.read_spss() and store in a df
+
+c) OPTIONAL: RUN JOB. THE USER has the option to run a JOB on this step which will automatically generate all plots based on uploaded file and the JOB loaded from previously saved JOB JSON files. If he uses this option all plots stored will be created in the uploaded file root folder. 
+
+IF optional c is not used then a new JOB instance is created as an empty JSON.This means the useer started with 2)
+
+
+2) app displays a LIVE VISUALIZATION PREVIEW based on the CROSSTAB arguments he inputs:
+a) Selects one "P#" categorical columns, from which categories are row indexes
+b) User inputs the amount (integer) of elements he wants to introduce in the column array for the crosstab: amount determined by the quantity of rows between POND column and the first "P#" column. This means the integer (elements) cannot be higher than the amount of categorical columns between these two columns. This quantity may vary depending on the uploaded file.
+c) User defines the order of categorical columns (elements, on the last step) to create the input column array for the crosstab [].
+d) Visualization can now be live previewed in a default bar chart ploted with plotly.
+e) User now has access to a sidebar in which he can fully customize the live preview with the plotly arguments (chart type, legends, title, subtitle, color palette, etc). Live preview will updated with changes to the parameters of these arguments.
+f) USER will press the "Generate" button to SAVE AS a png in the root folder from the upload file, suggested name is current "P#" categorical.  And USER will be asked if he wants to append all the previous filtering parameters to the ongoing JOB JSON. 
+g) USER is asked if he wants to generate another plot which means returning to step 2.b) OR USER can opt for using the  "Finish Job" button, that when activated prompts the user to give a name to the job, saves the file in the jobs folder within the repository, generates a plotly HTML report with all the plots generated on the current job and CLOSES the current JOB and reruns the app.
+
+JOB JSON format
+    job = {
+        "name": "",
+        "tables": [
+            {
+                "name": "",
+                "filter_params": []
+            }
+        ]
+    } 
+
+JOB append example:
+    job = {
+        "name": "",
+        "tables": [
+            {
+                "name": "#P=(current categorical for row index)",
+                "filter_params": [includes all arguments used in crosstab() and plotly methods used]
+            }
+        ]
+    } 
