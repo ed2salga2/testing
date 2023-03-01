@@ -1,7 +1,5 @@
-matplotlib
 pandas
 streamlit
-google
-google-auth
-google-api-python-client
-savReaderWriter
+plotly
+json
+os
