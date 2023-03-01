@@ -48,8 +48,7 @@ def generate_plot(df, job, col_name, num_elements, col_order, altair_args):
     return job
 
 
-def main(run_app):
-    if run_app:
+def main():
         st.set_page_config(page_title="Crosstab Plotter App", page_icon=":bar_chart:")
 
         if "jobs" not in os.listdir():
@@ -112,6 +111,5 @@ def main(run_app):
 
                         st.write("Report generated successfully!")
                         st.stop()
-
-        else:
-            st.stop()
+if __name__ == "__main__":
+    main()
