@@ -4,13 +4,21 @@ import altair as alt
 import json
 import argparse
 import os
+import tempfile
+from segysak.segy import segy_header_scan
 
 
 def initialize_and_upload():
     uploaded_file = st.file_uploader("Upload file", type=".sav")
     if uploaded_file is not None:
-        df = pd.read_spss(uploaded_file)
-        job = {"name": "", "tables": []}
+            with tempfile.NamedTemporaryFile() as temp_sav:
+            ## Writes the .sav to the temporal file
+            temp_sav.write(uploaded_file.getbuffer())
+            ## Now use the temporal file path
+            scan = segy_header_scan(temp_sav.name)
+            df = pd.read_spss(scan.name)
+            st.write(df)
+            job = {"name": "", "tables": []}
         return df, job
     else:
         return None, None
