@@ -1,5 +1,6 @@
-pandas
 streamlit
+streamlit_option_menu
+pandas
+plotly
+pyngrok
 pyreadstat
-altair
-argparse
