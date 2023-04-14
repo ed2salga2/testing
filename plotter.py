@@ -58,7 +58,10 @@ def bar_chart(data, row_index, color_sequence, en_text='.2s'):
     return px.bar(data, x=row_index, y='count', color='Variable', color_discrete_sequence=color_sequence, text_auto=en_text)
 
 def horizontal_bar_chart(data, row_index, color_sequence, en_text='.2s'):
-    return px.bar(data, x='count', y=row_index, color='Variable', orientation='h', color_discrete_sequence=color_sequence, text_auto=en_text)
+    chart = px.bar(data, x='count', y=row_index, color='Variable', orientation='h', color_discrete_sequence=color_sequence, text_auto=en_text)
+    chart.update_yaxes(automargin=True)
+    chart.update_layout(margin=dict(l=100))
+    return chart
 
 def multi_bar_chart(data, row_index, color_sequence,en_text='.2s'):
     chart = px.bar(data, x=row_index, y='count', barmode='group', color='Variable', color_discrete_sequence=color_sequence, text_auto=en_text)
@@ -67,7 +70,9 @@ def multi_bar_chart(data, row_index, color_sequence,en_text='.2s'):
 
 def horizontal_multi_bar_chart(data, row_index, color_sequence, en_text='.2s'):
     chart = px.bar(data, x='count', y=row_index, color='Variable', orientation='h', barmode='group', color_discrete_sequence=color_sequence, text_auto=en_text)
+    chart.update_yaxes(automargin=True)
     chart.update_traces(textposition='outside')
+    chart.update_layout(margin=dict(l=100))
     return chart
 
 def line_chart(data, row_index, color_sequence):
@@ -201,10 +206,30 @@ def save_as_template(plot_configs, report_name):
         return None
 
 def save_html_report(html_report, report_name):
+    html_header = f"""<!doctype html>
+    <html lang="en">
+    <head>
+        <meta charset="utf-8">
+        <title>{report_name}</title>
+        <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.7/css/bootstrap.min.css" integrity="sha384-BVYiiSIFeK1dGmJRAkycuHAHRg32OmUcww7on3RYdg4Va+PmSTsz/K68vbdEjh4u" crossorigin="anonymous">
+        <style>
+            .container {{
+                padding-left: 100px; /* Add left padding to the container */
+            }}
+        </style>
+    </head>
+    <body>
+        <div class="container">"""
+    html_footer = """
+        </div>
+    </body>
+    </html>
+    """
+    full_html_report = html_header + html_report + html_footer
     if report_name: 
         with open(f"{report_name}.html", "w") as f:
-            f.write(html_report)
-        report_download_link = get_download_link(report_name, html_report)  # add report_name argument here
+            f.write(full_html_report)
+        report_download_link = get_download_link(report_name, full_html_report)  
         st.markdown(report_download_link, unsafe_allow_html=True)
     else:
         st.write('Please add report name')
